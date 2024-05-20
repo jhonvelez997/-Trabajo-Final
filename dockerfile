@@ -57,7 +57,7 @@ WORKDIR /app
 
 COPY ./app .
 
-COPY requirements.txt /opt/spark/requirements.txt
+COPY .app/requirements.txt /opt/spark/requirements.txt
 
 RUN pip3 install -r /opt/spark/requirements.txt
 
