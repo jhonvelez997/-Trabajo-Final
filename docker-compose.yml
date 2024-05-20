@@ -2,7 +2,7 @@ version: "3.3"
 services:
 
   spark-master:
-    image: trabajo_final:latest
+    image: final:latest
     ports:
       - "9090"
       - "7077"
@@ -16,12 +16,18 @@ services:
       - SPARK_LOCAL_IP=spark-master
       - SPARK_WORKLOAD=master
     restart: always
-
-  nginx:
-    image: nginx:latest
-    volumes: 
-       - ./nginx/nginx.conf:etc/nginx/nginx.conf:ro
+  spark-worker-a:
+    image: final:latest
+    ports:
+      - "9091:8080"
+      - "7000:7000"
     depends_on:
       - spark-master
-    ports:
-      - "80:80"
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_DRIVER_MEMORY=1G
+      - SPARK_EXECUTOR_MEMORY=1G
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-a

@@ -15,7 +15,7 @@ def extract_util(text):
 
 
 dict_users = {}
-with open(r"ml-1m\users.dat", encoding="latin-1") as file:
+with open(r"ml-1m/users.dat", encoding="latin-1") as file:
     lines = file.readlines()
     for line in lines:
         dat = line.split("::")
@@ -23,7 +23,7 @@ with open(r"ml-1m\users.dat", encoding="latin-1") as file:
 dict_users_bd = sc.broadcast(dict_users)
 
 dict_meta = {}
-with open(r"ml-1m\movies.dat", encoding="latin-1") as file:
+with open(r"ml-1m/movies.dat", encoding="latin-1") as file:
     lines = file.readlines()
     for line in lines:
         dat = line.split("::")
@@ -32,12 +32,12 @@ with open(r"ml-1m\movies.dat", encoding="latin-1") as file:
 dict_meta_bd = sc.broadcast(dict_meta)
 
 
-use_rat = sc.textFile(r"ml-1m\ratings.dat") \
+use_rat = sc.textFile(r"ml-1m/ratings.dat") \
     .map(lambda x: x.split("::")) \
     .map(lambda x: [x[1], int(x[2]), x[0]]) \
     .map(lambda x : (x[0],(x[1],x[2]), dict_users_bd.value[x[-1]]))
 
-ratings = sc.textFile(r"ml-1m\ratings.dat") \
+ratings = sc.textFile(r"ml-1m/ratings.dat") \
     .map(lambda x: x.split("::")) \
     .map(lambda x: [x[1], int(x[2])]) \
     .mapValues(lambda x: (x,1)) \
