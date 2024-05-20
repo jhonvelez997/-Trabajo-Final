@@ -36,7 +36,7 @@ SPARK_WORKER_PORT=7000 \
 SPARK_MASTER="spark://spark-master:7077" \
 SPARK_WORKLOAD="master"
 
-EXPOSE 8080 7077 7000 8888 5000 9191
+EXPOSE 8080 7077 7000 8888 5000 9191 9092
 
 RUN mkdir -p $SPARK_LOG_DIR && \
 touch $SPARK_MASTER_LOG && \
@@ -54,5 +54,5 @@ COPY ./app .
 
 RUN pip3 install -r requirements.txt
 
-CMD gunicorn --bind 0.0.0.0:9191 app:app 
+CMD gunicorn --bind 0.0.0.0:5000 app:app 
 
