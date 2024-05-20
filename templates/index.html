@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manly Landing Page</title>
+  <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>Trabajo Final </h1>
+    <p>Realizado por Jhon Alejandro Velez!</p>
+    <a href="#" class="btn">Codigo</a>
+  </div>
+
+
+  <div class="container">
+    <h1>API Endpoints</h1>
+    <table>
+      <tr>
+        <th>Endpoint</th>
+        <th>Arguments</th>
+        <th>Examples</th>
+      </tr>
+      <tr>
+        <td>RATE_TOP20</td>
+        <td>year:int, genre:str</td>
+        <td><a href="http://localhost:5000/RATE_TOP20?year=2000">http://localhost:5000/RATE_TOP20?year=2000</a> | <a href="http://localhost:5000/RATE_TOP20?genre=drama">http://localhost:5000/RATE_TOP20?genre=drama</a> | <a href="http://localhost:5000/RATE_TOP20?genre=drama&year=1993">http://localhost:5000/RATE_TOP20?genre=drama&year=1993</a></td>
+      </tr>
+      <tr>
+        <td>RATE_BOTTOM20</td>
+        <td>year:int, genre:str</td>
+        <td><a href="http://localhost:5000/RATE_BOTTOM20?year=2000">http://localhost:5000/RATE_BOTTOM20?year=2000</a> | <a href="http://localhost:5000/RATE_BOTTOM20?genre=drama">http://localhost:5000/RATE_BOTTOM20?genre=drama</a> | <a href="http://localhost:5000/RATE_BOTTOM20?genre=drama&year=1993">http://localhost:5000/RATE_BOTTOM20?genre=drama&year=1993</a></td>
+      </tr>
+      <tr>
+        <td>COUNT_TOP20</td>
+        <td>year:int, genre:str</td>
+        <td><a href="http://localhost:5000/COUNT_TOP20?year=2000">http://localhost:5000/COUNT_TOP20?year=2000</a> | <a href="http://localhost:5000/COUNT_TOP20?genre=drama">http://localhost:5000/COUNT_TOP20?genre=drama</a> | <a href="http://localhost:5000/COUNT_TOP20?genre=drama&year=1993">http://localhost:5000/COUNT_TOP20?genre=drama&year=1993</a></td>
+      </tr>
+      <tr>
+        <td>MOVIE</td>
+        <td>movie:str</td>
+        <td><a href="http://localhost:5000/MOVIE?movie=american%20beauty">http://localhost:5000/MOVIE?movie=american beauty</a></td>
+      </tr>
+      <tr>
+        <td>LISTBYGENDER</td>
+        <td>gender:str</td>
+        <td><a href="http://localhost:5000/LISTBYGENDER?gender=comedy">http://localhost:5000/LISTBYGENDER?gender=comedy</a></td>
+      </tr>
+      <tr>
+        <td>SUGGEST</td>
+        <td>genero:str, edad:int</td>
+        <td><a href="http://localhost:5000/SUGGEST?genero=F">http://localhost:5000/SUGGEST?genero=F</a> | <a href="http://localhost:5000/SUGGEST?edad=43">http://localhost:5000/SUGGEST?edad=43</a> | <a href="http://localhost:5000/SUGGEST?edad=43&genero=M">http://localhost:5000/SUGGEST?edad=43&genero=M</a></td>
+      </tr>
+    </table>
+  </div>
+
+</body>
+</html>
