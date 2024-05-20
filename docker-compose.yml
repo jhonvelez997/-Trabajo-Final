@@ -4,11 +4,11 @@ services:
   spark-master:
     image: trabajo_final:latest
     ports:
-      - "9090:8080"
-      - "7077:7077"
-      - "8888:8888"
-      - "4040:4040"
-      - "8000:8000"
+      - "9090"
+      - "7077"
+      - "8888"
+      - "4040"
+      - "8000"
       - "9191"
     volumes:
        - /home/ubuntu-user/spark_cluster_1_no_hadoop:/home
