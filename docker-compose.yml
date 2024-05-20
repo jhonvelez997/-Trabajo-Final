@@ -5,6 +5,7 @@ services:
         context: .
     ports:
         -  "8888"
+        -  "9292"
   nginx: 
     image: nginx:latest
     volumes:
