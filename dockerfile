@@ -48,6 +48,7 @@ COPY start-spark.sh /
 
 RUN mkdir /app
 
+WORKDIR /app
 
 COPY . .
 
