@@ -9,7 +9,7 @@ services:
       - "8888:8888"
       - "4040:4040"
       - "8000:8000"
-      - "9191:9191"
+      - "9191"
     volumes:
        - /home/ubuntu-user/spark_cluster_1_no_hadoop:/home
     environment:
