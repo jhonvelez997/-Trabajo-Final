@@ -48,18 +48,11 @@ COPY start-spark.sh /
 
 RUN mkdir /app
 
-ADD app.py /app/app.py
-ADD templates /app/templates
-ADD static /app/static
-ADD ml-100k /app/ml-100k
-
-WORKDIR /app
+WORKDIR /hab
 
 COPY ./app .
 
-COPY .app/requirements.txt /opt/spark/requirements.txt
-
-RUN pip3 install -r /opt/spark/requirements.txt
+RUN pip3 install -r requirements.txt
 
 CMD gunicorn --bind 0.0.0.0:8888 app:app 
 
