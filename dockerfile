@@ -52,11 +52,11 @@ COPY . .
 
 RUN pip3 install -r requirements.txt
 
-RUN apt-get install -y supervisor
+#RUN apt-get install -y supervisor
 
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+#COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+#CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
 
-#CMD gunicorn --bind 0.0.0.0:9191 app:app 
+CMD gunicorn --bind 0.0.0.0:9191 app:app 
 
