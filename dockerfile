@@ -21,8 +21,6 @@ WORKDIR /opt/spark
 
 RUN apt-get install --fix-broken
 
-RUN apt-get install --fix-broken
-
 RUN apt-get install -y python-dev
 
 
