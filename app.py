@@ -4,7 +4,7 @@ import re
 from flask import Flask,request,render_template, jsonify, url_for
 findspark.init()
 
-spark = SparkSession.builder.appName("Trabajo_Final").master("local[*]").getOrCreate()
+spark = SparkSession.builder.appName("Trabajo_Final").master("spark://spark-master:7077").getOrCreate()
 sc = spark.sparkContext
 
 
