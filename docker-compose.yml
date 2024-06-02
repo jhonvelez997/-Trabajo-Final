@@ -6,3 +6,12 @@ services:
     ports:
       - "5000:5000"
     restart: always
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - spark-master
+    restart: always
