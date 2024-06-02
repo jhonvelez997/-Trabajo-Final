@@ -1,58 +1,23 @@
-import findspark
-from pyspark.sql import SparkSession
+from pymongo import MongoClient
+from bson import json_util
+import json
 import re
+import pandas as pd
 from flask import Flask,request,render_template, jsonify, url_for
-findspark.init()
-
-spark = SparkSession.builder.appName("Trabajo_Final").master("local").getOrCreate()
-sc = spark.sparkContext
 
 
-def extract_util(text):
-    pattern = r'\((.*?)\)'  
-    matches = re.findall(pattern, text)  
-    return matches
+client = MongoClient('mongodb://jhonalevc:3004222950a.@172.191.160.139:27017/?tls=false')
+db = client['final'] 
+collection_ratings = db["ratings"]
+collection_movies = db["movies"]
+collection_users = db["users"]
+collection_finalrdd = db["collection_finalrdd"]
+collection_use_rat = db["use_rat"]
+collection_dict = db["dict"]
 
+dict_ = list(collection_dict.find())
+dict_df = pd.json_normalize(dict_)
 
-dict_users = {}
-with open(r"ml-1m/users.dat", encoding="latin-1") as file:
-    lines = file.readlines()
-    for line in lines:
-        dat = line.split("::")
-        dict_users[dat[0]] = (dat[1], int(dat[2]))
-dict_users_bd = sc.broadcast(dict_users)
-
-dict_meta = {}
-with open(r"ml-1m/movies.dat", encoding="latin-1") as file:
-    lines = file.readlines()
-    for line in lines:
-        dat = line.split("::")
-
-        dict_meta[dat[0]] = (dat[1], dat[2].replace("\n",""))
-dict_meta_bd = sc.broadcast(dict_meta)
-
-
-use_rat = sc.textFile(r"ml-1m/ratings.dat") \
-    .map(lambda x: x.split("::")) \
-    .map(lambda x: [x[1], int(x[2]), x[0]]) \
-    .map(lambda x : (x[0],(x[1],x[2]), dict_users_bd.value[x[-1]]))
-
-ratings = sc.textFile(r"ml-1m/ratings.dat") \
-    .map(lambda x: x.split("::")) \
-    .map(lambda x: [x[1], int(x[2])]) \
-    .mapValues(lambda x: (x,1)) \
-    .reduceByKey(lambda x,y : (x[0] +y[0], x[1]+ y[1])) \
-    .mapValues(lambda x : (round(x[0]/x[1],2), x[1]))
-
-final_rdd = ratings.map(lambda x: (x[0], x[1], dict_meta_bd.value[x[0]])) \
-    .map(lambda x: (x[0], x[1][0], x[1][1], x[2][0], x[2][1])) \
-    .map(lambda x: (
-        x[0],
-        x[1],
-        x[2], 
-        re.sub(r'\((\d+)\)', "" ,x[3] ).lower().strip(), 
-        int(re.findall(r'\((\d+)\)' , x[3])[0]) , 
-        x[4].lower().split("|")))
 
 app = Flask(__name__)
 
@@ -69,43 +34,37 @@ def rate_top_20():
     if yr == None and genre == None:
         return jsonify({"Respuesta":"No ingresaste ninguno de los parametros/Argumentos de busqueda"})
     
-
     if yr == None and genre != None:
         genre = genre.lower().strip()
-        r = final_rdd \
-            .filter(lambda x: genre in x[5]) \
-            .sortBy(lambda x : -x[1]) \
-            .take(20)
-        return jsonify(r)
-    
+        response = collection_finalrdd.find({"genres":genre}).sort([("rating",-1)]).limit(20)
+        r = list(response)
+        if len(r) == 0 : return jsonify({"Respuesta":"No hay Peliculas con su argumento de busqueda"})
+        else:
+            return jsonify(json_util._json_convert(r))
+        
     if yr != None and genre == None:
         try:
             yr = int(yr.replace(",","").replace(".",""))
-            r = final_rdd \
-                .filter(lambda x : x[4]== yr) \
-                .sortBy(lambda x : -x[1]) \
-                .collect()
+            response = collection_finalrdd.find({"year":yr}).sort([("rating",-1)]).limit(20)
+            r = list(response)
             if len(r) == 0:
                 return jsonify({"Respuesta":f"Para el criterio de busqueda no hay peliculas: {yr}, Nota: El año maximo es 2000 y el minimo 1919"})
-            return jsonify(r)
+            return jsonify(json_util._json_convert(r))
         except:
             return jsonify({"Respuesta":f"El parametro que ingresaste (year) no es numerico: {yr}"})
-        
+
     if yr !=None and genre != None:
         genre = genre.lower().strip()
         try:
             yr = int(yr.replace(",","").replace(".",""))
-            r = final_rdd \
-                .filter(lambda x : x[4]== yr) \
-                .filter(lambda x: genre in x[5]) \
-                .sortBy(lambda x : -x[1]) \
-                .take(20)
+            response = collection_finalrdd.find({"year":yr, "genres":genre}).sort([("rating",-1)]).limit(20)
+            r = list(response)
             if len(r) == 0:
                 return jsonify({"Respuesta":f"Para los criterios de busqueda no hay peliculas: {yr},{genre}; Nota: El año maximo es 2000 y el minimo 1919"})
-            return jsonify(r)
+            return jsonify(json_util._json_convert(r))
         except:
             return jsonify({"Respuesta":f"El parametro que ingresaste (year) no es numerico: {yr}"})
-
+    
 
 @app.route("/RATE_BOTTOM20")
 def RATE_BOTTOM20():
@@ -115,40 +74,34 @@ def RATE_BOTTOM20():
     if yr == None and genre == None:
         return jsonify({"Respuesta":"No ingresaste ninguno de los parametros/Argumentos de busqueda"})
     
-
     if yr == None and genre != None:
         genre = genre.lower().strip()
-        r = final_rdd \
-            .filter(lambda x: genre in x[5]) \
-            .sortBy(lambda x : x[1]) \
-            .take(20)
-        return jsonify(r)
-    
+        response = collection_finalrdd.find({"genres":genre}).sort([("rating",1)]).limit(20)
+        r = list(response)
+        if len(r) == 0 : return jsonify({"Respuesta":"No hay Peliculas con su argumento de busqueda"})
+        else:
+            return jsonify(json_util._json_convert(r))
+        
     if yr != None and genre == None:
         try:
             yr = int(yr.replace(",","").replace(".",""))
-            r = final_rdd \
-                .filter(lambda x : x[4]== yr) \
-                .sortBy(lambda x : x[1]) \
-                .take(20)
+            response = collection_finalrdd.find({"year":yr}).sort([("rating",1)]).limit(20)
+            r = list(response)
             if len(r) == 0:
                 return jsonify({"Respuesta":f"Para el criterio de busqueda no hay peliculas: {yr}, Nota: El año maximo es 2000 y el minimo 1919"})
-            return jsonify(r)
+            return jsonify(json_util._json_convert(r))
         except:
             return jsonify({"Respuesta":f"El parametro que ingresaste (year) no es numerico: {yr}"})
-        
+
     if yr !=None and genre != None:
         genre = genre.lower().strip()
         try:
             yr = int(yr.replace(",","").replace(".",""))
-            r = final_rdd \
-                .filter(lambda x : x[4]== yr) \
-                .filter(lambda x: genre in x[5]) \
-                .sortBy(lambda x : x[1]) \
-                .take(20)
+            response = collection_finalrdd.find({"year":yr, "genres":genre}).sort([("rating",1)]).limit(20)
+            r = list(response)
             if len(r) == 0:
                 return jsonify({"Respuesta":f"Para los criterios de busqueda no hay peliculas: {yr},{genre}; Nota: El año maximo es 2000 y el minimo 1919"})
-            return jsonify(r)
+            return jsonify(json_util._json_convert(r))
         except:
             return jsonify({"Respuesta":f"El parametro que ingresaste (year) no es numerico: {yr}"})
 
@@ -161,40 +114,34 @@ def COUNT_TOP20():
     if yr == None and genre == None:
         return jsonify({"Respuesta":"No ingresaste ninguno de los parametros/Argumentos de busqueda"})
     
-
     if yr == None and genre != None:
         genre = genre.lower().strip()
-        r = final_rdd \
-            .filter(lambda x: genre in x[5]) \
-            .sortBy(lambda x : -x[2]) \
-            .take(20)
-        return jsonify(r)
-    
+        response = collection_finalrdd.find({"genres":genre}).sort([("no_reviews",-1)]).limit(20)
+        r = list(response)
+        if len(r) == 0 : return jsonify({"Respuesta":"No hay Peliculas con su argumento de busqueda"})
+        else:
+            return jsonify(json_util._json_convert(r))
+        
     if yr != None and genre == None:
         try:
             yr = int(yr.replace(",","").replace(".",""))
-            r = final_rdd \
-                .filter(lambda x : x[4]== yr) \
-                .sortBy(lambda x : -x[2]) \
-                .take(20)
+            response = collection_finalrdd.find({"year":yr}).sort([("no_reviews",-1)]).limit(20)
+            r = list(response)
             if len(r) == 0:
                 return jsonify({"Respuesta":f"Para el criterio de busqueda no hay peliculas: {yr}, Nota: El año maximo es 2000 y el minimo 1919"})
-            return jsonify(r)
+            return jsonify(json_util._json_convert(r))
         except:
             return jsonify({"Respuesta":f"El parametro que ingresaste (year) no es numerico: {yr}"})
-        
+
     if yr !=None and genre != None:
         genre = genre.lower().strip()
         try:
             yr = int(yr.replace(",","").replace(".",""))
-            r = final_rdd \
-                .filter(lambda x : x[4]== yr) \
-                .filter(lambda x: genre in x[5]) \
-                .sortBy(lambda x : -x[2]) \
-                .take(20)
+            response = collection_finalrdd.find({"year":yr, "genres":genre}).sort([("no_reviews",-1)]).limit(20)
+            r = list(response)
             if len(r) == 0:
                 return jsonify({"Respuesta":f"Para los criterios de busqueda no hay peliculas: {yr},{genre}; Nota: El año maximo es 2000 y el minimo 1919"})
-            return jsonify(r)
+            return jsonify(json_util._json_convert(r))
         except:
             return jsonify({"Respuesta":f"El parametro que ingresaste (year) no es numerico: {yr}"})
 
@@ -208,13 +155,11 @@ def MOVIE():
     
     if mv != None :
         mv = mv.lower().strip()
-        r = final_rdd \
-            .filter(lambda x: mv in x[3]) \
-            .take(5)
-        if len(r) == 0 :
-            return jsonify({"Respuesta":"No hay peliculas con ese nombre, revisa el nombre e intenta de nuevo"})
-        return jsonify(r)
-    
+        response = collection_finalrdd.find({"name":{"$regex":mv}}).sort([("rating",-1)]).limit(20)
+        r = list(response)
+        if len(r) == 0 : return jsonify({"Respuesta":"No hay peliculas con ese nombre, revisa el nombre e intenta de nuevo"})
+        return jsonify(json_util._json_convert(r))
+
 
 @app.route("/LISTBYGENDER")
 def LISTBYGENDER():
@@ -225,23 +170,22 @@ def LISTBYGENDER():
     
     gender = gender.lower().strip()
 
-    r1_vistas = final_rdd \
-        .filter(lambda x: gender in x[5]) \
-        .sortBy(lambda x : -x[2]).take(5)
-    r1_rating = final_rdd \
-        .filter(lambda x: gender in x[5]) \
-        .sortBy(lambda x : -x[1]).take(5)
-    
+    reponse_vista =  collection_finalrdd.find({"genres":gender}).sort([("no_reviews",-1)]).limit(20)
+    resposne_rating =  collection_finalrdd.find({"genres":gender}).sort([("rating",-1)]).limit(20)
+    r1_rating = list(resposne_rating)
+    r1_vistas = list(reponse_vista)
+
     if r1_rating == []:
         return jsonify({"Respuesta":f"Para el argumento ingresado {gender}, no hay peliculas"})
     
     else:
         dct = {
-            "Mas Vistas": r1_vistas,
-            "Mejor Rating": r1_rating
+            "Mas Vistas": json_util._json_convert(r1_vistas),
+            "Mejor Rating": json_util._json_convert(r1_rating)
         }
         return jsonify(dct)
-    
+
+
 
 @app.route("/SUGGEST")
 def SUGGEST():
@@ -273,21 +217,20 @@ def SUGGEST():
                 else:
                     edad = 56
                 print(edad)
-                r = use_rat.filter(lambda x: x[2][1] == edad) \
-                        .map(lambda x : (x[0], (x[1][0], 1))) \
-                        .reduceByKey( lambda x, y : (x[0] + y[0], x[1]+ y[1])) \
-                        .mapValues(lambda x: (round(x[0]/x[1],2))) \
-                        .map(lambda x : (x[0], (x[1]), (dict_meta_bd.value[x[0]]))) \
-                        .map(lambda x : (
-                            x[0],
-                            x[1],
-                            re.sub(r'\((\d+)\)', "" ,x[2][0] ).lower().strip(),
-                            int(re.findall(r'\((\d+)\)' , x[2][0])[0]),
-                            x[2][1].lower().split("|")
-                            )
-                        ) \
-                        .sortBy(lambda x : -x[1]).take(25) 
-                return jsonify(r)
+
+
+                response  =  collection_use_rat.find({"age":edad})
+                r = list(response)
+                r_df = pd.json_normalize(r)
+                r_final = r_df.merge(dict_df, how="left", on= "movie_id")
+                xc = r_final.groupby("movie_id")["rating"].agg(["mean","count"]).reset_index().merge(
+                    r_final[["movie_id","name","year"]],
+                    how="left",
+                    on = "movie_id"
+                ).drop_duplicates(subset="movie_id")
+                xc.columns = ["movie_id","rating_promedio","No_Reviews","Name","year"]
+                xc = xc.sort_values(by="No_Reviews", ascending=False).head(20).to_json(orient="records")
+                return jsonify(json.loads(xc))
         except:
             return jsonify({"Respuesta":f"El argumento ingresado para la busqueda edad {edad} no es numerico"})
         
@@ -296,22 +239,20 @@ def SUGGEST():
         if genero not in ["M","F"]:
             return jsonify({"Respuesta":f"El argumento de busqueda genero pasado {genero} debe ser F para femenino y M para masculino"})
         else:
-            r = use_rat.filter(lambda x: x[2][0] == genero) \
-                            .map(lambda x : (x[0], (x[1][0], 1))) \
-                            .reduceByKey( lambda x, y : (x[0] + y[0], x[1]+ y[1])) \
-                            .mapValues(lambda x: (round(x[0]/x[1],2))) \
-                            .map(lambda x : (x[0], (x[1]), (dict_meta_bd.value[x[0]]))) \
-                            .map(lambda x : (
-                                x[0],
-                                x[1],
-                                re.sub(r'\((\d+)\)', "" ,x[2][0] ).lower().strip(),
-                                int(re.findall(r'\((\d+)\)' , x[2][0])[0]),
-                                x[2][1].lower().split("|")
-                                )
-                            ) \
-                            .sortBy(lambda x : -x[1]).take(25) 
-            
-            return jsonify(r)
+
+            response  =  collection_use_rat.find({"user_gender":genero})
+            r = list(response)
+            r_df = pd.json_normalize(r)
+            r_final = r_df.merge(dict_df, how="left", on= "movie_id")
+            xc = r_final.groupby("movie_id")["rating"].agg(["mean","count"]).reset_index().merge(
+                r_final[["movie_id","name","year"]],
+                how="left",
+                on = "movie_id"
+            ).drop_duplicates(subset="movie_id")
+            xc.columns = ["movie_id","rating_promedio","No_Reviews","Name","year"]
+            xc = xc.sort_values(by="No_Reviews", ascending=False).head(20).to_json(orient="records")
+            return jsonify(json.loads(xc))
+
         
     elif genero != None and edad != None:
         genero = genero.upper().strip()
@@ -338,25 +279,22 @@ def SUGGEST():
                 else:
                     edad = 56
                 print(edad)
-                r = use_rat.filter(lambda x: x[2][0] == genero) \
-                        .filter(lambda x: x[2][1] == edad) \
-                        .map(lambda x : (x[0], (x[1][0], 1))) \
-                        .reduceByKey( lambda x, y : (x[0] + y[0], x[1]+ y[1])) \
-                        .mapValues(lambda x: (round(x[0]/x[1],2))) \
-                        .map(lambda x : (x[0], (x[1]), (dict_meta_bd.value[x[0]]))) \
-                        .map(lambda x : (
-                            x[0],
-                            x[1],
-                            re.sub(r'\((\d+)\)', "" ,x[2][0] ).lower().strip(),
-                            int(re.findall(r'\((\d+)\)' , x[2][0])[0]),
-                            x[2][1].lower().split("|")
-                            )
-                        ) \
-                        .sortBy(lambda x : -x[1]).take(25) 
-                
+
+                response  =  collection_use_rat.find({"age":edad, "user_gender":genero})
+                r = list(response)
                 if len(r) == 0:
                     return jsonify({"Respuesta":"No hay datos para tus argumentos de busqueda"})
-                return jsonify(r)
+                r_df = pd.json_normalize(r)
+                r_final = r_df.merge(dict_df, how="left", on= "movie_id")
+                xc = r_final.groupby("movie_id")["rating"].agg(["mean","count"]).reset_index().merge(
+                    r_final[["movie_id","name","year"]],
+                    how="left",
+                    on = "movie_id"
+                ).drop_duplicates(subset="movie_id")
+                xc.columns = ["movie_id","rating_promedio","No_Reviews","Name","year"]
+                xc = xc.sort_values(by="No_Reviews", ascending=False).head(20).to_json(orient="records")
+                return jsonify(json.loads(xc))
+
         except:
             return jsonify({"Respuesta":f"El argumento ingresado para la busqueda edad {edad} no es numerico"})
         
